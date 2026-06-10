@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kişisel Challenge Takip Sistemi</title>
+    <!-- Google Fonts: Inter & Outfit -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- CSS Dosyası -->
+    <link rel="stylesheet" href="style.css">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+
+    <!-- Bildirim Balonu (Toast) -->
+    <div id="toast" class="toast hidden"></div>
+
+    <!-- 1. GİRİŞ VE KAYIT EKRANI -->
+    <div id="auth-container" class="auth-container">
+        <div class="auth-card">
+            <div class="auth-header">
+                <div class="logo">
+                    <i class="fa-solid fa-fire-flame-curved logo-icon"></i>
+                    <h1>Challenge<span>Tracker</span></h1>
+                </div>
+                <p id="auth-subtitle">Hedeflerinizi belirleyin, serinizi koruyun ve kendinizi geliştirin.</p>
+            </div>
+
+            <!-- Giriş Formu -->
+            <form id="login-form" class="auth-form">
+                <h2>Giriş Yap</h2>
+                <div class="input-group">
+                    <i class="fa-solid fa-user"></i>
+                    <input type="text" id="login-username" placeholder="Kullanıcı Adı veya E-posta" required>
+                </div>
+                <div class="input-group">
+                    <i class="fa-solid fa-lock"></i>
+                    <input type="password" id="login-password" placeholder="Şifre" required>
+                </div>
+                <button type="submit" class="btn btn-primary btn-block">Giriş Yap</button>
+                <p class="auth-switch">Hesabınız yok mu? <a href="#" id="show-register">Kayıt Ol</a></p>
+            </form>
+
+            <!-- Kayıt Formu (Varsayılan olarak gizli) -->
+            <form id="register-form" class="auth-form hidden">
+                <h2>Kayıt Ol</h2>
+                <div class="input-group">
+                    <i class="fa-solid fa-user"></i>
+                    <input type="text" id="register-username" placeholder="Kullanıcı Adı" required>
+                </div>
+                <div class="input-group">
+                    <i class="fa-solid fa-envelope"></i>
+                    <input type="email" id="register-email" placeholder="E-posta Adresi" required>
+                </div>
+                <div class="input-group">
+                    <i class="fa-solid fa-lock"></i>
+                    <input type="password" id="register-password" placeholder="Şifre" required>
+                </div>
+                <button type="submit" class="btn btn-primary btn-block">Kayıt Ol</button>
+                <p class="auth-switch">Zaten hesabınız var mı? <a href="#" id="show-login">Giriş Yap</a></p>
+            </form>
+        </div>
+    </div>
+
+    <!-- 2. ANA PANEL (DASHBOARD) -->
+    <div id="app-container" class="app-container hidden">
+        <!-- Sol Menü / Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-brand">
+                <i class="fa-solid fa-fire-flame-curved sidebar-logo-icon"></i>
+                <h2>C-Tracker</h2>
+            </div>
+            
+            <div class="user-profile">
+                <div class="avatar">
+                    <i class="fa-solid fa-user-astronaut"></i>
+                </div>
+                <h3 id="profile-username">Kullanıcı</h3>
+                <span class="user-role">Meydan Okuyucu</span>
+            </div>
+
+            <nav class="sidebar-menu">
+                <a href="#" class="menu-item active" data-target="dashboard-section">
+                    <i class="fa-solid fa-chart-pie"></i> Kontrol Paneli
+                </a>
+                <a href="#" class="menu-item" data-target="challenges-section">
+                    <i class="fa-solid fa-list-check"></i> Meydan Okumalarım
+                </a>
+                <a href="#" class="menu-item" data-target="badges-section">
+                    <i class="fa-solid fa-trophy"></i> Başarılar & Rozetler
+                </a>
+            </nav>
+
+            <div class="sidebar-footer">
+                <div id="db-indicator" class="db-indicator">
+                    <span class="dot"></span>
+                    <span id="db-mode-text">Yükleniyor...</span>
+                </div>
+                <button id="logout-btn" class="btn btn-danger btn-block">
+                    <i class="fa-solid fa-right-from-bracket"></i> Çıkış Yap
+                </button>
+            </div>
+        </aside>
+
+        <!-- Ana İçerik Alanı -->
+        <main class="main-content">
+            <!-- Üst Bar -->
+            <header class="main-header">
+                <div>
+                    <h1 id="welcome-message">Hoş Geldiniz!</h1>
+                    <p class="text-muted">Bugün harika bir gün, serini devam ettir!</p>
+                </div>
+                <div class="header-stats">
+                    <div class="h-stat-item">
+                        <i class="fa-solid fa-fire streak-fire-icon"></i>
+                        <div>
+                            <span id="header-streak-val" class="h-stat-value">0</span>
+                            <span class="h-stat-label">Günlük Seri</span>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <!-- KONTROL PANELİ BÖLÜMÜ -->
+            <section id="dashboard-section" class="tab-content active-tab">
+                <!-- İstatistik Kartları -->
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-icon icon-blue">
+                            <i class="fa-solid fa-spinner"></i>
+                        </div>
+                        <div class="stat-info">
+                            <h3>Aktif Hedefler</h3>
+                            <p id="stat-active-count" class="stat-number">0</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon icon-green">
+                            <i class="fa-solid fa-circle-check"></i>
+                        </div>
+                        <div class="stat-info">
+                            <h3>Tamamlananlar</h3>
+                            <p id="stat-completed-count" class="stat-number">0</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon icon-purple">
+                            <i class="fa-solid fa-award"></i>
+                        </div>
+                        <div class="stat-info">
+                            <h3>Kazanılan Rozetler</h3>
+                            <p id="stat-badge-count" class="stat-number">0</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Dashboard Grid -->
+                <div class="dashboard-grid">
+                    <!-- Sol Taraf: Yeni Challenge Ekleme ve Grafikler -->
+                    <div class="grid-col-left">
+                        <!-- Yeni Challenge Formu -->
+                        <div class="glass-card">
+                            <div class="card-header">
+                                <h2><i class="fa-solid fa-plus-circle"></i> Yeni Meydan Okuma Başlat</h2>
+                            </div>
+                            <form id="create-challenge-form" class="card-body">
+                                <div class="form-group">
+                                    <label for="ch-title">Meydan Okuma Başlığı *</label>
+                                    <input type="text" id="ch-title" placeholder="Örn: 30 Gün Yazılım Geliştirme" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="ch-desc">Açıklama / Kurallar</label>
+                                    <textarea id="ch-desc" rows="2" placeholder="Her gün 1 saat kod yazılacak, Github'a atılacak..."></textarea>
+                                </div>
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label for="ch-start">Başlangıç Tarihi *</label>
+                                        <input type="date" id="ch-start" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="ch-end">Bitiş Tarihi *</label>
+                                        <input type="date" id="ch-end" required>
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <label for="ch-category">Kategori</label>
+                                    <select id="ch-category">
+                                        <option value="Yazılım">Yazılım</option>
+                                        <option value="Spor & Sağlık">Spor & Sağlık</option>
+                                        <option value="Kişisel Gelişim">Kişisel Gelişim</option>
+                                        <option value="Kitap Okuma">Kitap Okuma</option>
+                                        <option value="Yabancı Dil">Yabancı Dil</option>
+                                        <option value="Diğer">Diğer</option>
+                                    </select>
+                                </div>
+                                <button type="submit" class="btn btn-primary btn-block">Meydan Okumayı Başlat</button>
+                            </form>
+                        </div>
+
+                        <!-- Kategori Dağılımı Grafiği -->
+                        <div class="glass-card margin-top">
+                            <div class="card-header">
+                                <h2><i class="fa-solid fa-chart-donut"></i> Kategori Dağılımı</h2>
+                            </div>
+                            <div class="card-body chart-container">
+                                <canvas id="categoryChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Sağ Taraf: Son Aktiviteler ve Rozet Önizlemesi -->
+                    <div class="grid-col-right">
+                        <!-- Son Aktiviteler -->
+                        <div class="glass-card">
+                            <div class="card-header">
+                                <h2><i class="fa-solid fa-clock-rotate-left"></i> Son İlerlemeler</h2>
+                            </div>
+                            <div class="card-body">
+                                <div id="recent-activities-list" class="activity-timeline">
+                                    <p class="text-muted text-center">Henüz bir ilerleme kaydedilmedi.</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Kazanılan Hızlı Rozetler -->
+                        <div class="glass-card margin-top">
+                            <div class="card-header">
+                                <h2><i class="fa-solid fa-medal"></i> Son Rozetlerim</h2>
+                            </div>
+                            <div class="card-body">
+                                <div id="quick-badges-list" class="quick-badges-grid">
+                                    <!-- Rozetler buraya JS ile dolacak -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- MEYDAN OKUMALARIM BÖLÜMÜ -->
+            <section id="challenges-section" class="tab-content">
+                <div class="glass-card">
+                    <div class="card-header flex-header">
+                        <h2><i class="fa-solid fa-flag-checkered"></i> Aktif Meydan Okumalarım</h2>
+                        <span class="badge-count" id="active-challenges-badge">0 Aktif</span>
+                    </div>
+                    <div class="card-body">
+                        <div id="challenges-list" class="challenges-grid">
+                            <!-- Challenge kartları buraya yüklenecektir -->
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ROZETLER VE BAŞARILAR BÖLÜMÜ -->
+            <section id="badges-section" class="tab-content">
+                <div class="glass-card">
+                    <div class="card-header">
+                        <h2><i class="fa-solid fa-trophy"></i> Başarı ve Rozet Sistemi</h2>
+                        <p class="text-muted">Meydan okumaları tamamladıkça ve serinizi korudukça yeni rozetler kazanabilirsiniz.</p>
+                    </div>
+                    <div class="card-body">
+                        <div id="badges-grid-full" class="badges-grid-full">
+                            <!-- Tüm rozetlerin detaylı listesi kilitli/açık haliyle gelecek -->
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- GÜNLÜK İLERLEME LOG KAYDETME MODALI -->
+    <div id="log-modal" class="modal hidden">
+        <div class="modal-content glass-card">
+            <div class="modal-header">
+                <h2 id="modal-title">Günlük İlerleme Kaydet</h2>
+                <button id="close-modal-btn" class="close-btn">&times;</button>
+            </div>
+            <form id="log-form" class="modal-body">
+                <input type="hidden" id="log-challenge-id">
+                <input type="hidden" id="log-date">
+                
+                <div class="form-group">
+                    <label>Seçilen Tarih</label>
+                    <div id="log-date-display" class="date-display">10 Haziran 2026</div>
+                </div>
+
+                <div class="form-group">
+                    <label>Durum Belirleyin *</label>
+                    <div class="status-selector">
+                        <label class="status-option option-completed">
+                            <input type="radio" name="log-status" value="completed" checked required>
+                            <div class="status-box">
+                                <i class="fa-solid fa-circle-check"></i>
+                                <span>Tamamlandı</span>
+                            </div>
+                        </label>
+                        <label class="status-option option-missed">
+                            <input type="radio" name="log-status" value="missed">
+                            <div class="status-box">
+                                <i class="fa-solid fa-circle-xmark"></i>
+                                <span>Kaçırıldı</span>
+                            </div>
+                        </label>
+                        <label class="status-option option-pending">
+                            <input type="radio" name="log-status" value="pending">
+                            <div class="status-box">
+                                <i class="fa-solid fa-clock"></i>
+                                <span>Temizle</span>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="log-notes">Günün Notu / İlerleme Detayı</label>
+                    <textarea id="log-notes" rows="3" placeholder="Bugün neler başardın? Ne gibi zorluklarla karşılaştın?"></textarea>
+                </div>
+
+                <button type="submit" class="btn btn-primary btn-block">Kaydet</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- UYGULAMA JS DOSYASI -->
+    <script src="app.js"></script>
+</body>
+</html>
